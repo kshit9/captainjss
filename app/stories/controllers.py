@@ -45,6 +45,8 @@ def createStory():
             apiDetails.jsonData = content.get("apiDetails").get("jsonData")
 
         apiDetails.url = content.get("apiDetails").get("url")
+        apiDetails.url = apiDetails.url.replace("?","")
+        print(apiDetails.url)
         apiDetails.requestType = content.get("apiDetails").get("requestType")
         story.apiDetails = apiDetails
     else:

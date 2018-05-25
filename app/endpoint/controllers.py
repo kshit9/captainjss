@@ -8,7 +8,6 @@ from jinja2 import Undefined, Template
 from flask import Blueprint, request, send_file, abort
 from app import app
 
-from app.commons import errorCodes
 from app.commons.logger import logger
 from app.commons import buildResponse
 from app.core.intentClassifier import IntentClassifier
@@ -37,7 +36,7 @@ def callApi(url, type, parameters, isJson=False):
     if "GET" in type:
         if isJson:
             print(parameters)
-            response = requests.get(url, json=json.loads(parameters))
+            response = requests.get(url)
 
         else:
             response = requests.get(url, params=parameters)
@@ -55,7 +54,7 @@ def callApi(url, type, parameters, isJson=False):
         response = requests.delete(url)
     else:
         raise Exception("unsupported request method.")
-    result = json.loads(response.text)
+    result = response.text
     print(result)
     return result
 
@@ -64,6 +63,7 @@ def callApi(url, type, parameters, isJson=False):
 @endpoint.route('/v1', methods=['POST'])
 def api():
     requestJson = request.get_json(silent=True)
+    # logger.info(requestJson)
     resultJson = requestJson
 
     if requestJson:
@@ -76,7 +76,7 @@ def api():
             story = Story.objects(
                 intentName=app.config["DEFAULT_WELCOME_INTENT_NAME"]).first()
             resultJson["complete"] = True
-            resultJson["intent"]["name"] = story.storyName
+            resultJson["intent"]["name"] = story.intentName
             resultJson["intent"]["storyId"] = str(story.id)
             resultJson["input"] = requestJson.get("input")
             template = Template(
@@ -136,7 +136,7 @@ def api():
             else:
                 resultJson["complete"] = True
 
-        elif (requestJson.get("complete") is False):
+        elif requestJson.get("complete") is False:
             if "cancel" not in story.intentName:
                 storyId = requestJson["intent"]["storyId"]
                 story = Story.objects.get(id=ObjectId(storyId))
@@ -172,6 +172,7 @@ def api():
 
                 urlTemplate = Template(story.apiDetails.url, undefined=SilentUndefined)
                 renderedUrl = urlTemplate.render(**context)
+                print(renderedUrl)
                 if story.apiDetails.isJson:
                     isJson = True
                     requestTemplate = Template(story.apiDetails.jsonData, undefined=SilentUndefined)
